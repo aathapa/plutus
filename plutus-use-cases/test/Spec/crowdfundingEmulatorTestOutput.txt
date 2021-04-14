@@ -1,4 +1,4 @@
-Slot 1: TxnValidate 4febabe136e65d5fb4683b378570e6f43f92056e489281ad2e6302a9fa127874
+Slot 0: TxnValidate 4febabe136e65d5fb4683b378570e6f43f92056e489281ad2e6302a9fa127874
 Slot 1: 00000000-0000-4000-8000-000000000000 {Contract instance for wallet 1}:
           Contract instance started
 Slot 1: 00000000-0000-4000-8000-000000000000 {Contract instance for wallet 1}:
@@ -71,9 +71,9 @@ Slot 1: W4: Balancing an unbalanced transaction:
                     "\237\209\195sr\247R\201z\236\b\130E/\172\172\ETB\164\253\175F\230\FS\ETX?J\246x\164\a\155\205"}
               Requires signatures:
 Slot 1: W4: TxSubmit: baf6bbf87bb020cb7b73668445e495a4231f48661861dd3f533b5c5fefacc2e7
-Slot 2: TxnValidate baf6bbf87bb020cb7b73668445e495a4231f48661861dd3f533b5c5fefacc2e7
-Slot 2: TxnValidate cd4b7d8bec90f2d391b18997c6f791d7787fded09384914629e5f1327ac05aba
-Slot 2: TxnValidate e310bbe5114fa94b7c0d2981ac5d4f4d79378764706ace1293572952f88c4ed6
+Slot 1: TxnValidate baf6bbf87bb020cb7b73668445e495a4231f48661861dd3f533b5c5fefacc2e7
+Slot 1: TxnValidate cd4b7d8bec90f2d391b18997c6f791d7787fded09384914629e5f1327ac05aba
+Slot 1: TxnValidate e310bbe5114fa94b7c0d2981ac5d4f4d79378764706ace1293572952f88c4ed6
 Slot 20: 00000000-0000-4000-8000-000000000000 {Contract instance for wallet 1}:
            Contract log: String "Collecting funds"
 Slot 20: W1: Balancing an unbalanced transaction:
@@ -97,4 +97,4 @@ Slot 20: W1: Balancing an unbalanced transaction:
 Slot 20: W1: TxSubmit: e2738209e8f952609f122587b787fc49b40df578dda5a15992c29c24decff8e0
 Slot 20: 00000000-0000-4000-8000-000000000000 {Contract instance for wallet 1}:
            Contract instance stopped (no errors)
-Slot 21: TxnValidate e2738209e8f952609f122587b787fc49b40df578dda5a15992c29c24decff8e0
+Slot 20: TxnValidate e2738209e8f952609f122587b787fc49b40df578dda5a15992c29c24decff8e0
