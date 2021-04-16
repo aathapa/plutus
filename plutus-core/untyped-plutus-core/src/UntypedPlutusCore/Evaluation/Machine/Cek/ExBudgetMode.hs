@@ -44,7 +44,7 @@ import           Text.PrettyBy                                     (IgnorePretty
 -- | Construct an 'ExBudgetMode' out of a function returning a value of the budgeting state type.
 -- The value then gets added to the current state via @(<>)@.
 monoidalBudgeting
-    :: Monoid cost => (ExBudgetCategory fun -> ExBudget -> cost) -> ExBudgetMode cost uni fun
+    :: Monoid cost => (ExBudgetCategory fun -> ExBudget -> cost) -> ExBudgetMode cost fun
 monoidalBudgeting toCost = ExBudgetMode $ do
     costRef <- newSTRef mempty
     let spend key budgetToSpend = liftCekST $ modifySTRef' costRef (<> toCost key budgetToSpend)
@@ -59,7 +59,7 @@ instance Pretty CountingSt where
     pretty (CountingSt budget) = parens $ "required budget:" <+> pretty budget <> line
 
 -- | For calculating the cost of execution.
-counting :: ExBudgetMode CountingSt uni fun
+counting :: ExBudgetMode CountingSt fun
 counting = monoidalBudgeting $ const CountingSt
 
 -- | For a detailed report on what costs how much + the same overall budget that 'Counting' gives.
@@ -90,7 +90,7 @@ instance (Show fun, Ord fun) => Pretty (TallyingSt fun) where
         ]
 
 -- | For a detailed report on what costs how much + the same overall budget that 'Counting' gives.
-tallying :: (Eq fun, Hashable fun) => ExBudgetMode (TallyingSt fun) uni fun
+tallying :: (Eq fun, Hashable fun) => ExBudgetMode (TallyingSt fun) fun
 tallying =
     monoidalBudgeting $ \key budgetToSpend ->
         TallyingSt (CekExTally $ singleton key budgetToSpend) budgetToSpend
@@ -104,7 +104,13 @@ instance Pretty RestrictingSt where
     pretty (RestrictingSt budget) = parens $ "final budget:" <+> pretty budget <> line
 
 -- | For execution, to avoid overruns.
+<<<<<<< HEAD
 restricting :: forall uni fun . (PrettyUni uni fun) => ExRestrictingBudget -> ExBudgetMode RestrictingSt uni fun
+||||||| parent of 548f298cc (WIP)
+restricting :: ExRestrictingBudget -> ExBudgetMode RestrictingSt uni fun
+=======
+restricting :: ExRestrictingBudget -> ExBudgetMode RestrictingSt fun
+>>>>>>> 548f298cc (WIP)
 restricting (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
     -- Using two separate 'STRef's instead of a single one for efficiency reasons.
     -- Gave us a ~1% speedup the time this idea was implemented.
@@ -134,5 +140,11 @@ enormousBudget = ExRestrictingBudget $ ExBudget (ExCPU maxInt) (ExMemory maxInt)
                  where maxInt = fromIntegral (maxBound::Int)
 
 -- | 'restricting' instantiated at 'enormousBudget'.
+<<<<<<< HEAD
 restrictingEnormous :: (PrettyUni uni fun) => ExBudgetMode RestrictingSt uni fun
+||||||| parent of 548f298cc (WIP)
+restrictingEnormous :: ExBudgetMode RestrictingSt uni fun
+=======
+restrictingEnormous :: ExBudgetMode RestrictingSt fun
+>>>>>>> 548f298cc (WIP)
 restrictingEnormous = restricting enormousBudget

@@ -62,7 +62,7 @@ test_applyBuiltinFunction fun =
             let exF = toExF defaultCostModel
             withGenArgsRes sch f $ \args res ->
                 -- The calls to 'unAppM' are just to drive type inference.
-                unAppM (applyTypeSchemed fun sch f exF args) === unAppM (makeKnown res)
+                unAppM (applyTypeSchemed spendBudget fun sch f exF args) === unAppM (makeKnown res)
 
 test_applyDefaultBuiltin :: TestTree
 test_applyDefaultBuiltin =

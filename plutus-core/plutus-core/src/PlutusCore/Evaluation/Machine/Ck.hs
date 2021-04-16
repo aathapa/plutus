@@ -374,9 +374,10 @@ applyBuiltin
     -> [CkValue uni fun]
     -> CkM uni fun s (Term TyName Name uni fun ())
 applyBuiltin stack bn args = do
-    let dischargeError = hoist $ withExceptT $ mapCauseInMachineException ckValueToTerm
+    let
+        dischargeError = hoist $ withExceptT $ mapCauseInMachineException ckValueToTerm
     BuiltinRuntime sch _ f exF <- asksM $ lookupBuiltin bn . ckEnvRuntime
-    result <- dischargeError $ applyTypeSchemed bn sch f exF args
+    result <- dischargeError $ applyTypeSchemed spendBudget bn sch f exF args
     stack <| result
 
 runCk

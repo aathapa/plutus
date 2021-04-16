@@ -50,7 +50,7 @@ test_applyBuiltinFunction fun =
                 getIterAppValue = runPlcT genTypedBuiltinDef $ genIterAppValue denot
             IterAppValue _ (IterApp _ args) res <- forAllNoShow getIterAppValue
             -- The calls to 'unAppM' are just to drive type inference.
-            unAppM (applyTypeSchemed fun sch f exF args) === unAppM (makeKnown res)
+            unAppM (applyTypeSchemed spendBudget fun sch f exF args) === unAppM (makeKnown res)
 
 test_applyDefaultBuiltin :: TestTree
 test_applyDefaultBuiltin =

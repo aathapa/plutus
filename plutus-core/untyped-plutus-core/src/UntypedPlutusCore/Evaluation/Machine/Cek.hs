@@ -66,7 +66,7 @@ allow one to specify an 'ExBudgetMode'. I.e. such functions are only for fully e
 runCekNoEmit
     :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => BuiltinsRuntime fun (CekValue uni fun)
-    -> ExBudgetMode cost uni fun
+    -> ExBudgetMode cost fun
     -> Term Name uni fun ()
     -> (Either (CekEvaluationException uni fun) (Term Name uni fun ()), cost)
 runCekNoEmit runtime mode term =
@@ -81,7 +81,7 @@ unsafeRunCekNoEmit
        , Ix fun, Pretty fun, Typeable fun
        )
     => BuiltinsRuntime fun (CekValue uni fun)
-    -> ExBudgetMode cost uni fun
+    -> ExBudgetMode cost fun
     -> Term Name uni fun ()
     -> (EvaluationResult (Term Name uni fun ()), cost)
 unsafeRunCekNoEmit runtime mode =
