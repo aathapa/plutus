@@ -47,7 +47,7 @@ import           PlutusPrelude
 
 -- | Actual simplifier
 simplify :: M.ToBuiltinMeaning uni fun => Term TyName Name uni fun b -> Term TyName Name uni fun b
-simplify = Beta.beta . Inline.inline . DeadCode.removeDeadBindings
+simplify = DeadCode.removeDeadBindings . Inline.inline . Beta.beta
 
 -- | Perform some simplification of a 'Term'.
 simplifyTerm :: Compiling m e uni fun a => Term TyName Name uni fun b -> m (Term TyName Name uni fun b)
