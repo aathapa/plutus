@@ -181,7 +181,7 @@ type CekValEnv uni fun = UniqueMap TermUnique (CekValue uni fun)
 -- defers to the function stored in the environment). This makes the budgeting machinery extensible
 -- and allows us to separate budgeting logic from evaluation logic and avoid branching on the union
 -- of all possible budgeting state types during evaluation.
-newtype CekBudgetSpender s = CekBudgetSpender
+newtype CekBudgetSpender fun s = CekBudgetSpender
     { unCekBudgetSpender
         :: ExBudgetCategory fun -> ExBudget -> CekM s ()
     }
@@ -301,14 +301,14 @@ instance Pretty CekUserError where
 -- Should we use @https://hackage.haskell.org/package/monad-st@?
 -- | Lift an 'ST' computation into 'CekCarryingM'.
 liftCekST :: ST s a -> CekM s a
-liftCekST = lift
+liftCekST = id
 
-spendBudgetCek :: (ToExMemory term, GivenCekSpender fun s) => ExBudgetCategory fun -> ExBudget -> CekCarryingM term fun s ()
+spendBudgetCek :: GivenCekSpender fun s => ExBudgetCategory fun -> ExBudget -> CekM s ()
 spendBudgetCek key budgetToSpend =
     let (CekBudgetSpender spend) = ?cekBudgetSpender
     in spend key budgetToSpend
 
-emitCek :: (GivenCekEmitter s) => String -> CekCarryingM term fun s ()
+emitCek :: (GivenCekEmitter s) => String -> CekM s ()
 emitCek str =
     let mayLogsRef = ?cekEmitter
     in case mayLogsRef of
@@ -396,7 +396,6 @@ instance ToExMemory (CekValue uni fun) where
 
 {-
 instance MonadEmitter (CekCarryingM term fun s) where
->>>>>>> 548f298cc (WIP)
     emit str = do
         mayLogsRef <- asks cekEnvMayEmitRef
         case mayLogsRef of
@@ -449,7 +448,7 @@ extendEnv :: Name -> CekValue uni fun -> CekValEnv uni fun -> CekValEnv uni fun
 extendEnv = insertByName
 
 -- | Look up a variable name in the environment.
-lookupVarName :: forall uni fun cost s . (PrettyUni uni fun) => Name -> CekValEnv uni fun -> CekM s (CekValue uni fun)
+lookupVarName :: forall uni fun s . (PrettyUni uni fun) => Name -> CekValEnv uni fun -> CekM s (CekValue uni fun)
 lookupVarName varName varEnv = do
     case lookupName varName varEnv of
         Nothing  -> throwingWithCauseExc @(CekEvaluationException uni fun) _MachineError OpenTermEvaluatedMachineError $ Just var where
@@ -466,7 +465,7 @@ astNodeCost = ExBudget 1 0
 -- See Note [Compilation peculiarities].
 -- | The entering point to the CEK machine's engine.
 enterComputeCek
-    :: forall cost uni fun s
+    :: forall uni fun s
     . (Ix fun, PrettyUni uni fun)
     => Context uni fun
     -> CekValEnv uni fun
@@ -511,8 +510,7 @@ enterComputeCek = computeCek where
     -- s ; ρ ▻ builtin bn  ↦  s ◅ builtin bn arity arity [] [] ρ
     computeCek ctx _ (Builtin ex bn) = do
         spendBudget BBuiltin astNodeCost
-        rt <- asks cekEnvRuntime
-        BuiltinRuntime _ arity _ _ <- lookupBuiltinExc (Proxy @(CekEvaluationException uni fun)) bn rt
+        BuiltinRuntime _ arity _ _ <- lookupBuiltinExc (Proxy @(CekEvaluationException uni fun)) bn ?cekRuntime
         returnCek ctx (VBuiltin ex bn arity arity 0 [])
     -- s ; ρ ▻ error A  ↦  <> A
     computeCek _ _ (Error _) = do
@@ -619,8 +617,7 @@ enterComputeCek = computeCek where
         -> [CekValue uni fun]
         -> CekM s (Term Name uni fun ())
     applyBuiltin ctx bn args = do
-      rt <- asks cekEnvRuntime
-      BuiltinRuntime sch _ f exF <- lookupBuiltinExc (Proxy @(CekEvaluationException uni fun)) bn rt
+      BuiltinRuntime sch _ f exF <- lookupBuiltinExc (Proxy @(CekEvaluationException uni fun)) bn ?cekRuntime
 
       -- ''applyTypeSchemed' doesn't throw exceptions so that we can easily catch them here and
       -- post-process them.
