@@ -20,6 +20,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
+{-# LANGUAGE PartialTypeSignatures #-}
 module UntypedPlutusCore.Evaluation.Machine.Cek.Internal
     -- See Note [Compilation peculiarities].
     ( EvaluationResult(..)
@@ -206,6 +207,7 @@ type GivenCekEmitter s = (?cekEmitter :: (Maybe (STRef s (DList String))))
 type GivenCekSpender fun s = (?cekBudgetSpender :: (CekBudgetSpender fun s))
 
 type GivenCekReqs uni fun s = (GivenCekRuntime uni fun, GivenCekEmitter s, GivenCekSpender fun s)
+
 data CekUserError
     = CekOutOfExError ExRestrictingBudget -- ^ The final overspent (i.e. negative) budget.
     | CekEvaluationFailure -- ^ Error has been called or a builtin application has failed
@@ -280,7 +282,7 @@ throwCek :: (PrettyUni uni fun) => CekEvaluationException uni fun -> CekM s x
 throwCek = throwM
 
 -- | Less-polymorphic, exception-based version of 'throwing', useful in this module
-throwingCek :: (PrettyUni uni fun) => AReview (CekEvaluationException uni fun) t -> t -> CekM s x
+throwingCek :: forall uni fun t s x . (PrettyUni uni fun) => AReview (CekEvaluationException uni fun) t -> t -> CekM s x
 throwingCek l = reviews l throwM
 
 -- | Call 'dischargeCekValue' over the received 'CekVal' and feed the resulting 'Term' to
@@ -308,7 +310,7 @@ spendBudgetCek key budgetToSpend =
     let (CekBudgetSpender spend) = ?cekBudgetSpender
     in spend key budgetToSpend
 
-emitCek :: (GivenCekEmitter s) => String -> CekM s ()
+emitCek :: GivenCekEmitter s => String -> CekM s ()
 emitCek str =
     let mayLogsRef = ?cekEmitter
     in case mayLogsRef of
@@ -466,7 +468,7 @@ astNodeCost = ExBudget 1 0
 -- | The entering point to the CEK machine's engine.
 enterComputeCek
     :: forall uni fun s
-    . (Ix fun, PrettyUni uni fun)
+    . (Ix fun, PrettyUni uni fun, GivenCekReqs uni fun s)
     => Context uni fun
     -> CekValEnv uni fun
     -> TermWithMem uni fun
@@ -485,37 +487,37 @@ enterComputeCek = computeCek where
         -> CekM s (Term Name uni fun ())
     -- s ; ρ ▻ {L A}  ↦ s , {_ A} ; ρ ▻ L
     computeCek ctx env (Var _ varName) = do
-        spendBudget BVar astNodeCost
+        spendBudgetCek BVar astNodeCost
         val <- lookupVarName varName env
         returnCek ctx val
     computeCek ctx _ (Constant ex val) = do
-        spendBudget BConst astNodeCost
+        spendBudgetCek BConst astNodeCost
         returnCek ctx (VCon ex val)
     computeCek ctx env (LamAbs ex name body) = do
-        spendBudget BLamAbs astNodeCost
+        spendBudgetCek BLamAbs astNodeCost
         returnCek ctx (VLamAbs ex name body env)
     computeCek ctx env (Delay ex body) = do
-        spendBudget BDelay astNodeCost
+        spendBudgetCek BDelay astNodeCost
         returnCek ctx (VDelay ex body env)
     -- s ; ρ ▻ lam x L  ↦  s ◅ lam x (L , ρ)
     computeCek ctx env (Force _ body) = do
-        spendBudget BForce astNodeCost
+        spendBudgetCek BForce astNodeCost
         computeCek (FrameForce : ctx) env body
     -- s ; ρ ▻ [L M]  ↦  s , [_ (M,ρ)]  ; ρ ▻ L
     computeCek ctx env (Apply _ fun arg) = do
-        spendBudget BApply astNodeCost
+        spendBudgetCek BApply astNodeCost
         computeCek (FrameApplyArg env arg : ctx) env fun
     -- s ; ρ ▻ abs α L  ↦  s ◅ abs α (L , ρ)
     -- s ; ρ ▻ con c  ↦  s ◅ con c
     -- s ; ρ ▻ builtin bn  ↦  s ◅ builtin bn arity arity [] [] ρ
     computeCek ctx _ (Builtin ex bn) = do
-        spendBudget BBuiltin astNodeCost
+        spendBudgetCek BBuiltin astNodeCost
         BuiltinRuntime _ arity _ _ <- lookupBuiltinExc (Proxy @(CekEvaluationException uni fun)) bn ?cekRuntime
         returnCek ctx (VBuiltin ex bn arity arity 0 [])
     -- s ; ρ ▻ error A  ↦  <> A
     computeCek _ _ (Error _) = do
-        spendBudget BError astNodeCost
-        throwingCek _EvaluationFailure ()
+        spendBudgetCek BError astNodeCost
+        throwingCek @uni @fun _EvaluationFailure ()
 
     {- | The returning phase of the CEK machine.
     Returns 'EvaluationSuccess' in case the context is empty, otherwise pops up one frame
@@ -619,10 +621,18 @@ enterComputeCek = computeCek where
     applyBuiltin ctx bn args = do
       BuiltinRuntime sch _ f exF <- lookupBuiltinExc (Proxy @(CekEvaluationException uni fun)) bn ?cekRuntime
 
+      -- TODO: make less ugly
+      let
+          spender :: ExBudgetCategory fun -> ExBudget -> ExceptT e (WithEmitterT (CekM s)) ()
+          spender key b = lift $ lift $ spendBudgetCek key b
+          r1 :: CekM s (Either _ (CekValue uni fun))
+          r1 = flip unWithEmitterT emitCek $ runExceptT $ applyTypeSchemed spender bn sch f exF args
+
       -- ''applyTypeSchemed' doesn't throw exceptions so that we can easily catch them here and
       -- post-process them.
       -- See Note [Being generic over @term@ in 'CekM'].
-      resultOrErr <- runExceptT $ applyTypeSchemed bn sch f exF args
+      resultOrErr <- r1
+
       case resultOrErr of
           -- Turn the cause of a possible failure, being a 'CekValue', into a 'Term'.
           Left e       -> throwCek $ mapCauseInMachineException (void . dischargeCekValue) e
