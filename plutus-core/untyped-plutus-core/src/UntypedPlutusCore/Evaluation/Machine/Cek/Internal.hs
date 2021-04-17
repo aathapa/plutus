@@ -19,6 +19,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS_GHC -ddump-simpl -ddump-to-file -dsuppress-uniques -dsuppress-coercions -dsuppress-type-applications -dsuppress-unfoldings -dsuppress-idinfo -dumpdir /tmp/dumps #-}
 
 {-# LANGUAGE PartialTypeSignatures #-}
 module UntypedPlutusCore.Evaluation.Machine.Cek.Internal
@@ -183,8 +184,7 @@ type CekValEnv uni fun = UniqueMap TermUnique (CekValue uni fun)
 -- and allows us to separate budgeting logic from evaluation logic and avoid branching on the union
 -- of all possible budgeting state types during evaluation.
 newtype CekBudgetSpender fun s = CekBudgetSpender
-    { unCekBudgetSpender
-        :: ExBudgetCategory fun -> ExBudget -> CekM s ()
+    { unCekBudgetSpender :: ExBudgetCategory fun -> ExBudget -> CekM s ()
     }
 
 -- General enough to be able to handle a spender having one, two or any number of 'STRef's

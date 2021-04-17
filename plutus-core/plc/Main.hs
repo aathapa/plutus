@@ -36,6 +36,7 @@ import qualified Data.HashMap.Monoidal                    as H
 import           Data.List                                (nub)
 import qualified Data.List                                as List
 import           Data.List.Split                          (splitOn)
+import           Data.Proxy
 import qualified Data.Text                                as T
 import           Data.Text.Encoding                       (encodeUtf8)
 import qualified Data.Text.IO                             as T
@@ -219,13 +220,13 @@ exbudgetReader = do
     where badfmt = "Invalid budget (expected eg 10000:50000)"
 
 restrictingbudgetEnormous :: Parser BudgetMode
-restrictingbudgetEnormous = flag' (Verbose Cek.restrictingEnormous)
+restrictingbudgetEnormous = flag' (Verbose (Cek.restrictingEnormous (Proxy @PLC.DefaultUni)))
                             (  long "restricting-enormous"
                             <> short 'r'
                             <> help "Run the machine in restricting mode with an enormous budget" )
 
 restrictingbudget :: Parser BudgetMode
-restrictingbudget = Verbose . Cek.restricting . ExRestrictingBudget
+restrictingbudget = Verbose . Cek.restricting (Proxy @PLC.DefaultUni) . ExRestrictingBudget
                     <$> option exbudgetReader
                             (  long "restricting"
                             <> short 'R'

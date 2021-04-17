@@ -1,7 +1,8 @@
 -- | The API to the CEK machine.
 
-{-# LANGUAGE DataKinds     #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module UntypedPlutusCore.Evaluation.Machine.Cek
     ( EvaluationResult(..)
@@ -50,6 +51,7 @@ import           PlutusCore.Pretty
 import           PlutusCore.Universe
 
 import           Data.Ix
+import           Data.Proxy
 
 {- Note [CEK runners naming convention]
 A function whose name ends in @NoEmit@ does not perform logging and so does not return any logs.
@@ -89,21 +91,23 @@ unsafeRunCekNoEmit runtime mode =
 
 -- | Evaluate a term using the CEK machine with logging enabled.
 evaluateCek
-    :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
+    :: forall uni fun
+    . ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => BuiltinsRuntime fun (CekValue uni fun)
     -> Term Name uni fun ()
     -> (Either (CekEvaluationException uni fun) (Term Name uni fun ()), [String])
 evaluateCek runtime term =
-    case runCek runtime restrictingEnormous True term of
+    case runCek runtime (restrictingEnormous (Proxy @uni))True term of
         (errOrRes, _, logs) -> (errOrRes, logs)
 
 -- | Evaluate a term using the CEK machine with logging disabled.
 evaluateCekNoEmit
-    :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
+    :: forall uni fun
+    . ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => BuiltinsRuntime fun (CekValue uni fun)
     -> Term Name uni fun ()
     -> Either (CekEvaluationException uni fun) (Term Name uni fun ())
-evaluateCekNoEmit runtime = fst . runCekNoEmit runtime restrictingEnormous
+evaluateCekNoEmit runtime = fst . runCekNoEmit runtime (restrictingEnormous (Proxy @uni))
 
 -- | Evaluate a term using the CEK machine with logging enabled. May throw a 'CekMachineException'.
 unsafeEvaluateCek

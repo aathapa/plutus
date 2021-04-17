@@ -104,14 +104,8 @@ instance Pretty RestrictingSt where
     pretty (RestrictingSt budget) = parens $ "final budget:" <+> pretty budget <> line
 
 -- | For execution, to avoid overruns.
-<<<<<<< HEAD
-restricting :: forall uni fun . (PrettyUni uni fun) => ExRestrictingBudget -> ExBudgetMode RestrictingSt uni fun
-||||||| parent of 548f298cc (WIP)
-restricting :: ExRestrictingBudget -> ExBudgetMode RestrictingSt uni fun
-=======
-restricting :: ExRestrictingBudget -> ExBudgetMode RestrictingSt fun
->>>>>>> 548f298cc (WIP)
-restricting (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
+restricting :: forall uni fun proxy . (PrettyUni uni fun) => proxy uni -> ExRestrictingBudget -> ExBudgetMode RestrictingSt fun
+restricting _ (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
     -- Using two separate 'STRef's instead of a single one for efficiency reasons.
     -- Gave us a ~1% speedup the time this idea was implemented.
     cpuRef <- newSTRef cpuInit
@@ -140,11 +134,5 @@ enormousBudget = ExRestrictingBudget $ ExBudget (ExCPU maxInt) (ExMemory maxInt)
                  where maxInt = fromIntegral (maxBound::Int)
 
 -- | 'restricting' instantiated at 'enormousBudget'.
-<<<<<<< HEAD
-restrictingEnormous :: (PrettyUni uni fun) => ExBudgetMode RestrictingSt uni fun
-||||||| parent of 548f298cc (WIP)
-restrictingEnormous :: ExBudgetMode RestrictingSt uni fun
-=======
-restrictingEnormous :: ExBudgetMode RestrictingSt fun
->>>>>>> 548f298cc (WIP)
-restrictingEnormous = restricting enormousBudget
+restrictingEnormous :: (PrettyUni uni fun) => proxy uni -> ExBudgetMode RestrictingSt fun
+restrictingEnormous p = restricting p enormousBudget
